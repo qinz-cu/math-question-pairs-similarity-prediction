@@ -1,33 +1,22 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[123]:
-
-
 # get the work directory
 import os
 os.getcwd()
 #os.chdir('/content/sample_data')  #change the work directory
 
 
-# In[2]:
-
-
+## load data
 with open("C:\\Users\\User\\Desktop\\Hackathon\\camp_dataset\\sim_question_train.txt", encoding = "utf-8") as f:
     dat_train = f.readlines()
-
-
-# In[3]:
-
 
 with open("C:\\Users\\User\\Desktop\\Hackathon\\camp_dataset\\sim_question_test.txt", encoding = "utf-8") as f:
     dat_test = f.readlines()
 
 
-# In[4]:
-
-
-# import module
+    
+## import module
 import numpy as np
 import pandas as pd
 import jieba
@@ -37,9 +26,6 @@ from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 import seaborn as sns
 from gensim import models
-
-
-# In[5]:
 
 
 from time import time
@@ -55,7 +41,6 @@ from keras.optimizers import Adadelta
 from keras.callbacks import ModelCheckpoint
 
 
-# In[6]:
 
 
 ## define the function that split the data
@@ -78,23 +63,15 @@ def split_test_data (text):
     text_pd.drop("question", axis = 1, inplace =True)
     return text_pd
 
-
-# In[7]:
-
-
+## split data
 data_train = split_train_data(dat_train)
 data_test = split_test_data(dat_test)
 
 
-# In[8]:
-
-
+## clean data
 # first remove the \n in the train pair column
 data_train["pair"] = data_train["pair"].replace(r"\n", "",regex = True)
 data_train["pair"] = data_train["pair"].str.strip()
-
-
-# In[9]:
 
 
 # define the function to clean data
@@ -121,16 +98,11 @@ def clean_data (data):
     return data
 
 
-# In[10]:
-
-
 # clean dataset
 data_train = clean_data(data_train)
 data_test = clean_data(data_test)
 #data_train.head(500)
 
-
-# In[11]:
 
 
 ## define tokenize function
@@ -143,9 +115,6 @@ def tokenize_question (data, column):
     return q_words
 
 
-# In[12]:
-
-
 # tokenize the train and test data
 q1_words = tokenize_question(data_train, "q1")
 q2_words = tokenize_question(data_train,"q2")
@@ -153,9 +122,8 @@ q1_test_words = tokenize_question(data_test, "q1")
 q2_test_words = tokenize_question(data_test, "q2")
 
 
-# In[13]:
 
-
+## combine the tokenized words
 words_combine = []
 vic = dict()
 for i in q1_words:
@@ -168,14 +136,6 @@ for i in q2_test_words:
     words_combine.append(i)
 
 
-# In[14]:
-
-
-len(words_combine)
-
-
-# In[15]:
-
 
 ## use model to train word embedding
 #model1 = gensim.models.Word2Vec(words_combine, size=100, window=5, min_count=1)    ## accuracy = 0.690
@@ -187,9 +147,6 @@ len(words_combine)
 model7 = gensim.models.Word2Vec(words_combine, size=300, window=8, min_count=1)    ## accuracy = 0.7066
 
 
-# In[16]:
-
-
 ## define tokenize function
 def tokenize_question_sec (data):
     segs = jieba.cut(data)
@@ -197,18 +154,13 @@ def tokenize_question_sec (data):
     return result
 
 
-# In[17]:
-
-
+##prepare the data for model
 from gensim.test.utils import datapath
 # prepare embedding
 vocabulary = dict()
 inverse_vocabulary = ['<unk>']  # '<unk>' will never be used, it is only a placeholder for the [0, 0, ....0] embedding
 #word2vec = KeyedVectors.load_word2vec_format(datapath("euclidean_vectors.bin"), binary=True)
 questions_cols = ['q1', 'q2']
-
-
-# In[18]:
 
 
 # Iterate over the questions only of both training and test datasets
@@ -235,8 +187,7 @@ for dataset in [data_train, data_test]:
             dataset.loc[index, question] = q2n
 
 
-# In[19]:
-
+## create word embedding vectors
 
 embedding_dim = 300
 embeddings = 1 * np.random.randn(len(vocabulary) + 1, embedding_dim)  # This will be the embedding matrix
@@ -247,9 +198,6 @@ for word, index in vocabulary.items():
         embeddings[index] = model7[word]
 
 
-# In[20]:
-
-
 from itertools import product
 # prepare training and validation data
 max_seq_length = max(data_train.q1.map(lambda x: len(x)).max(),
@@ -257,7 +205,9 @@ max_seq_length = max(data_train.q1.map(lambda x: len(x)).max(),
                      data_test.q1.map(lambda x: len(x)).max(),
                      data_test.q2.map(lambda x: len(x)).max())
 
-# Split to train validation
+
+
+## Split to train validation
 validation_size = 4000
 training_size = len(data_train) - validation_size
 
@@ -284,10 +234,8 @@ assert X_train['left'].shape == X_train['right'].shape
 assert len(X_train['left']) == len(Y_train)
 
 
-# In[23]:
 
-
-# build the model
+## build the model
 # Model variables
 n_hidden = 30  ## the number of hidden layers 
 gradient_clipping_norm = 1.25   
@@ -334,7 +282,6 @@ malstm_trained = malstm.fit([X_train['left'], X_train['right']], Y_train, batch_
 print("Training time finished.\n{} epochs in {}".format(n_epoch, datetime.timedelta(seconds=time()-training_start_time)))
 
 
-# In[28]:
 
 
 # Plot accuracy
